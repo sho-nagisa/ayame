@@ -7,7 +7,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "localhost";
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   const imageUrl = `${protocol}://${host}/og.png`;
-  const title = "ヨミトク｜漢検6級 読みテスト";
+  const title = "あやめ｜漢検6級 読みテスト";
   const description = "小学校5年生修了程度の漢字を出題する、成績保存対応の漢検6級読み練習。";
 
   return {
@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title,
       description,
       type: "website",
-      images: [{ url: imageUrl, width: 1200, height: 630, alt: "ヨミトク 漢検6級 読みテスト" }],
+      images: [{ url: imageUrl, width: 1200, height: 630, alt: "あやめ 漢検6級 読みテスト" }],
     },
     twitter: {
       card: "summary_large_image",

@@ -1,4 +1,4 @@
-# ヨミトクのフォルダ構成
+# あやめのフォルダ構成
 
 ```mermaid
 flowchart TD

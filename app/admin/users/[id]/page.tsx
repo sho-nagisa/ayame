@@ -49,7 +49,7 @@ export default async function UserDetailPage({
 
   return (
     <main className="admin-shell">
-      <header className="admin-header"><Link className="brand" href="/admin"><span className="brand-mark">読</span><span>ヨミトク管理</span></Link></header>
+      <header className="admin-header"><Link className="brand" href="/admin"><span className="brand-mark">読</span><span>あやめ管理</span></Link></header>
       <section className="admin-content detail-content">
         <Link className="back-button" href="/admin">← 一覧へ戻る</Link>
         <p className="eyebrow">USER ANALYTICS</p>

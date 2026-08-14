@@ -52,7 +52,7 @@ export default async function AdminPage() {
     <main className="admin-shell">
       <header className="admin-header">
         <Link className="brand" href="/admin">
-          <span className="brand-mark">読</span><span>ヨミトク管理</span>
+          <span className="brand-mark">読</span><span>あやめ管理</span>
         </Link>
         <a href="/signout-with-chatgpt?return_to=/" className="admin-signout">ログアウト</a>
       </header>

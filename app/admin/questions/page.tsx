@@ -41,7 +41,7 @@ export default async function AdminQuestionsPage() {
       <header className="admin-header">
         <Link className="brand" href="/admin">
           <span className="brand-mark">読</span>
-          <span>ヨミトク管理</span>
+          <span>あやめ管理</span>
         </Link>
         <Link className="admin-signout" href="/admin">
           学習状況へ戻る

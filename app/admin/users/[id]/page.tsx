@@ -32,6 +32,19 @@ export default async function UserDetailPage({
   const total = attemptRows.reduce((sum, attempt) => sum + attempt.total, 0);
   const correct = attemptRows.reduce((sum, attempt) => sum + attempt.score, 0);
   const percentages = attemptRows.map((attempt) => Math.round((attempt.score / attempt.total) * 100));
+  const levelStats = Array.from(new Set(attemptRows.map((attempt) => attempt.level)))
+    .map((level) => {
+      const rows = attemptRows.filter((attempt) => attempt.level === level);
+      const questions = rows.reduce((sum, attempt) => sum + attempt.total, 0);
+      const levelCorrect = rows.reduce((sum, attempt) => sum + attempt.score, 0);
+      return {
+        level,
+        attempts: rows.length,
+        average: questions ? Math.round((levelCorrect / questions) * 100) : 0,
+        best: rows.length ? Math.max(...rows.map((attempt) => Math.round((attempt.score / attempt.total) * 100))) : 0,
+      };
+    })
+    .sort((a, b) => a.level.localeCompare(b.level, "ja"));
   const weakMap = new Map<string, { word: string; readings: string[]; wrong: number; asked: number; level: string }>();
   for (const answer of answerRows) {
     const item = weakMap.get(answer.questionId) ?? {
@@ -59,6 +72,15 @@ export default async function UserDetailPage({
           <article><span>受験回数</span><strong>{attemptRows.length}<small>回</small></strong></article>
           <article><span>平均正答率</span><strong>{total ? Math.round((correct / total) * 100) : 0}<small>%</small></strong></article>
           <article><span>最高正答率</span><strong>{percentages.length ? Math.max(...percentages) : 0}<small>%</small></strong></article>
+        </div>
+        <div className="admin-level-stats">
+          {levelStats.map((item) => (
+            <article key={item.level}>
+              <span>漢検{item.level}級</span>
+              <strong>{item.average}<small>% 平均</small></strong>
+              <p>{item.attempts}回受験 · 最高 {item.best}%</p>
+            </article>
+          ))}
         </div>
         <section className="admin-section">
           <div className="admin-section-title"><div><p className="eyebrow">WEAK POINTS</p><h2>苦手な問題</h2></div></div>

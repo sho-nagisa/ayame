@@ -2,11 +2,10 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
-  CURRENT_LEVEL,
-  LEVEL_6_KANJI_COUNT,
-  LEVEL_6_QUESTION_COUNT,
+  LEVELS,
   QUESTIONS as QUESTION_BANK,
   type Question,
+  type QuizLevel,
   type QuizMode,
 } from "@/lib/questions";
 
@@ -28,6 +27,14 @@ type ProgressData = {
     totalCorrect: number;
     totalQuestions: number;
   };
+  byLevel: Array<{
+    level: string;
+    attemptCount: number;
+    averagePercent: number;
+    bestPercent: number;
+    totalCorrect: number;
+    totalQuestions: number;
+  }>;
   weakQuestions: Array<{
     questionId: string;
     level: string;
@@ -91,6 +98,7 @@ export default function Home() {
   const [authBusy, setAuthBusy] = useState(false);
   const [phase, setPhase] = useState<"setup" | "quiz" | "result" | "progress">("setup");
   const [questionCount, setQuestionCount] = useState(10);
+  const [selectedLevel, setSelectedLevel] = useState<QuizLevel>("6");
   const [quizMode, setQuizMode] = useState<QuizMode>("mixed");
   const [quiz, setQuiz] = useState<Question[]>([]);
   const [index, setIndex] = useState(0);
@@ -180,7 +188,7 @@ export default function Home() {
 
   function startQuiz() {
     const levelQuestions = QUESTION_BANK.filter(
-      (question) => question.level === CURRENT_LEVEL,
+      (question) => question.level === selectedLevel,
     );
     const onQuestions = weightedSample(
       levelQuestions.filter((question) => question.kind === "音読み"),
@@ -213,7 +221,7 @@ export default function Home() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          level: CURRENT_LEVEL,
+          level: selectedLevel,
           mode: quizMode,
           leaveCount,
           answers: nextAnswers.map(({ id, response: studentResponse }) => ({
@@ -314,7 +322,7 @@ export default function Home() {
             <span className="brand-mark">読</span>
             <span>あやめ</span>
           </a>
-          <p className="eyebrow">KANKEN LEVEL 6</p>
+          <p className="eyebrow">KANKEN READING PRACTICE</p>
           <h1>{authMode === "login" ? "おかえりなさい" : "はじめまして"}</h1>
           <p className="auth-lead">
             {authMode === "login"
@@ -391,14 +399,15 @@ export default function Home() {
       {phase === "setup" && (
         <section className="setup-view">
           <div className="hero-copy">
-            <p className="eyebrow">KANKEN LEVEL 6 · READING PRACTICE</p>
+            <p className="eyebrow">KANKEN READING PRACTICE</p>
             <h1>
-              漢検6級、
+              漢検{selectedLevel}級、
               <br />
               <span>読みに挑戦。</span>
             </h1>
             <p className="lead">
-              小学校5年生修了程度・835字が対象。
+              {LEVELS.find((level) => level.id === selectedLevel)?.description}・
+              {LEVELS.find((level) => level.id === selectedLevel)?.kanjiCount}字が対象。
               <br />
               読み問題にしぼって、本番前の力試し。
             </p>
@@ -410,11 +419,27 @@ export default function Home() {
               <div>
                 <h2>テストを設定</h2>
                 <p>
-                  全{LEVEL_6_KANJI_COUNT}字・
-                  {LEVEL_6_QUESTION_COUNT.toLocaleString()}問から出題します
+                  全{LEVELS.find((level) => level.id === selectedLevel)?.kanjiCount}字・
+                  {QUESTION_BANK.filter((question) => question.level === selectedLevel).length.toLocaleString()}問から出題します
                 </p>
               </div>
             </div>
+
+            <fieldset>
+              <legend>受検級</legend>
+              <div className="mode-options">
+                {LEVELS.map((level) => (
+                  <button
+                    type="button"
+                    key={level.id}
+                    className={selectedLevel === level.id ? "selected" : ""}
+                    onClick={() => setSelectedLevel(level.id)}
+                  >
+                    {level.label}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
 
             <fieldset>
               <legend>出題モード</legend>
@@ -475,7 +500,7 @@ export default function Home() {
           </div>
 
           <div className="feature-row" aria-label="特徴">
-            <div><strong>835</strong><span>対象漢字</span></div>
+            <div><strong>{LEVELS.find((level) => level.id === selectedLevel)?.kanjiCount}</strong><span>対象漢字</span></div>
             <div><strong>70%</strong><span>合格目安</span></div>
             <div><strong>30</strong><span>読み問題</span></div>
           </div>
@@ -494,7 +519,7 @@ export default function Home() {
           </div>
 
           <article className="question-card">
-            <span className="level-chip">6級 · {quiz[index].kind}</span>
+            <span className="level-chip">{selectedLevel}級 · {quiz[index].kind}</span>
             <p className="instruction">次の漢字の読みを答えてください</p>
             <h1>{quiz[index].word}</h1>
             <p className="sentence">{quiz[index].sentence}</p>
@@ -533,7 +558,7 @@ export default function Home() {
           </div>
           <p className="result-message">
             {score === answers.length
-              ? "全問正解！6級の読みがしっかり身についています。"
+              ? `全問正解！${selectedLevel}級の読みがしっかり身についています。`
               : score >= passLine
                 ? "合格目安の70％をクリアしました。"
                 : `合格目安まであと${passLine - score}問。答えを復習しましょう。`}
@@ -573,7 +598,7 @@ export default function Home() {
       {phase === "progress" && progress && (
         <section className="progress-view">
           <button className="back-button" type="button" onClick={() => setPhase("setup")}>← テストへ戻る</button>
-          <p className="eyebrow">MY PROGRESS · LEVEL {CURRENT_LEVEL}</p>
+          <p className="eyebrow">MY PROGRESS · ALL LEVELS</p>
           <h1>{student?.name}さんの成績</h1>
           <p className="progress-lead">受験履歴と間違えた問題を、次の挑戦に活かしましょう。</p>
 
@@ -581,6 +606,16 @@ export default function Home() {
             <article><span>受験回数</span><strong>{progress.stats.attemptCount}<small>回</small></strong></article>
             <article><span>平均正答率</span><strong>{progress.stats.averagePercent}<small>%</small></strong></article>
             <article><span>最高正答率</span><strong>{progress.stats.bestPercent}<small>%</small></strong></article>
+          </div>
+
+          <div className="level-progress-grid">
+            {progress.byLevel.map((level) => (
+              <article className="level-progress-card" key={level.level}>
+                <span>{level.level}級</span>
+                <strong>{level.averagePercent}<small>% 平均</small></strong>
+                <p>{level.attemptCount}回受験 · 最高 {level.bestPercent}%</p>
+              </article>
+            ))}
           </div>
 
           <section className="progress-section">

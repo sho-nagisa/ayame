@@ -1,6 +1,6 @@
 import { getDb } from "@/db";
 import { attemptAnswers, attempts } from "@/db/schema";
-import { QUESTIONS, type QuizLevel, type QuizMode } from "@/lib/questions";
+import { LEVELS, QUESTIONS, type QuizLevel, type QuizMode } from "@/lib/questions";
 import { getSessionStudent } from "@/lib/student-auth";
 import { eq } from "drizzle-orm";
 import {
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   const leaveCount = Number(body?.leaveCount);
   const submitted = body?.answers as SubmittedAnswer[] | undefined;
   if (
-    level !== "6" ||
+    !LEVELS.some((item) => item.id === level) ||
     !["on", "kun", "mixed"].includes(String(mode)) ||
     !Number.isInteger(leaveCount) ||
     leaveCount < 0 ||

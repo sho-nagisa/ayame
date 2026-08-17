@@ -6,12 +6,12 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-test("問題バンクは音読み834問・訓読み731問を収録する", async () => {
+test("問題バンクは5級・6級を分けて収録する", async () => {
   const text = await source("lib/questions.ts");
-  assert.equal((text.match(/kind: "音読み"/g) ?? []).length, 834);
-  assert.equal((text.match(/kind: "訓読み"/g) ?? []).length, 731);
-  assert.equal((text.match(/\n  \{ id: "6-[^"]+"/g) ?? []).length, 1564);
-  assert.equal(new Set([...text.matchAll(/\n  \{ id: "([^"]+)"/g)].map((m) => m[1])).size, 1564);
+  assert.match(text, /QuizLevel = "5" \| "6"/);
+  assert.equal((text.match(/\{ id: "5-[^"]+"/g) ?? []).length, 1885);
+  assert.equal((text.match(/\{ id: "6-[^"]+"/g) ?? []).length, 1564);
+  assert.equal(new Set([...text.matchAll(/\{ id: "([^"]+)"/g)].map((m) => m[1])).size, 3449);
 });
 
 test("3モードが画面からAPIまで同じ値で連携する", async () => {
@@ -27,6 +27,9 @@ test("3モードが画面からAPIまで同じ値で連携する", async () => {
   assert.match(page, /kind === "訓読み"/);
   assert.match(page, /mode: quizMode/);
   assert.match(attempts, /mode: mode as QuizMode/);
+  assert.match(page, /selectedLevel/);
+  assert.match(page, /level: selectedLevel/);
+  assert.match(attempts, /LEVELS\.some/);
 });
 
 test("複数の正解読みを採点に使う", async () => {
@@ -50,5 +53,6 @@ test("認証と成績保存にセッション境界がある", async () => {
   assert.match(login, /passwordMatches/);
   assert.match(register, /makePassword/);
   assert.match(progress, /getSessionStudent/);
+  assert.match(progress, /byLevel/);
   assert.match(attempts, /getSessionStudent/);
 });

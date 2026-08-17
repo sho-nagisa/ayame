@@ -47,6 +47,19 @@ export default async function AdminPage() {
   const totalQuestions = attemptRows.reduce((sum, attempt) => sum + attempt.total, 0);
   const totalCorrect = attemptRows.reduce((sum, attempt) => sum + attempt.score, 0);
   const average = totalQuestions ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+  const levelStats = Array.from(new Set(attemptRows.map((attempt) => attempt.level)))
+    .map((level) => {
+      const rows = attemptRows.filter((attempt) => attempt.level === level);
+      const questions = rows.reduce((sum, attempt) => sum + attempt.total, 0);
+      const correct = rows.reduce((sum, attempt) => sum + attempt.score, 0);
+      return {
+        level,
+        attempts: rows.length,
+        average: questions ? Math.round((correct / questions) * 100) : 0,
+        best: rows.length ? Math.max(...rows.map((attempt) => Math.round((attempt.score / attempt.total) * 100))) : 0,
+      };
+    })
+    .sort((a, b) => a.level.localeCompare(b.level, "ja"));
 
   return (
     <main className="admin-shell">
@@ -68,6 +81,16 @@ export default async function AdminPage() {
           <article><span>登録ユーザー</span><strong>{studentRows.length}<small>人</small></strong></article>
           <article><span>受験回数</span><strong>{attemptRows.length}<small>回</small></strong></article>
           <article><span>全体正答率</span><strong>{average}<small>%</small></strong></article>
+        </div>
+
+        <div className="admin-level-stats">
+          {levelStats.map((item) => (
+            <article key={item.level}>
+              <span>漢検{item.level}級</span>
+              <strong>{item.average}<small>% 平均</small></strong>
+              <p>{item.attempts}回受験 · 最高 {item.best}%</p>
+            </article>
+          ))}
         </div>
 
         <section className="admin-section">

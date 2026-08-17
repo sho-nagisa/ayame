@@ -17,12 +17,21 @@ export async function GET(request: Request) {
     .where(eq(attempts.studentId, student.id))
     .orderBy(desc(attempts.createdAt));
 
+  const statsFor = (rows: typeof attemptRows) => {
+    const totalQuestions = rows.reduce((sum, attempt) => sum + attempt.total, 0);
+    const totalCorrect = rows.reduce((sum, attempt) => sum + attempt.score, 0);
+    const percentages = rows.map((attempt) => Math.round((attempt.score / attempt.total) * 100));
+    return {
+      attemptCount: rows.length,
+      averagePercent: totalQuestions ? Math.round((totalCorrect / totalQuestions) * 100) : 0,
+      bestPercent: percentages.length ? Math.max(...percentages) : 0,
+      totalCorrect,
+      totalQuestions,
+    };
+  };
+
   if (attemptRows.length === 0) {
-    return Response.json({
-      stats: { attemptCount: 0, averagePercent: 0, bestPercent: 0, totalCorrect: 0, totalQuestions: 0 },
-      weakQuestions: [],
-      attempts: [],
-    });
+    return Response.json({ stats: statsFor([]), byLevel: [], weakQuestions: [], attempts: [] });
   }
 
   const answerRows = await db
@@ -66,18 +75,15 @@ export async function GET(request: Request) {
     weakMap.set(answer.questionId, item);
   }
 
-  const totalQuestions = attemptRows.reduce((sum, attempt) => sum + attempt.total, 0);
-  const totalCorrect = attemptRows.reduce((sum, attempt) => sum + attempt.score, 0);
-  const percentages = attemptRows.map((attempt) => Math.round((attempt.score / attempt.total) * 100));
+  const byLevel = Array.from(new Set(attemptRows.map((attempt) => attempt.level)))
+    .map((level) => ({ level, ...statsFor(attemptRows.filter((attempt) => attempt.level === level)) }))
+    .sort((a, b) => a.level.localeCompare(b.level, "ja"));
 
   return Response.json({
     stats: {
-      attemptCount: attemptRows.length,
-      averagePercent: Math.round((totalCorrect / totalQuestions) * 100),
-      bestPercent: Math.max(...percentages),
-      totalCorrect,
-      totalQuestions,
+      ...statsFor(attemptRows),
     },
+    byLevel,
     weakQuestions: Array.from(weakMap.values())
       .filter((item) => item.wrongCount > 0)
       .sort((a, b) => b.wrongCount - a.wrongCount || a.word.localeCompare(b.word, "ja")),

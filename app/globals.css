@@ -886,6 +886,51 @@ legend,
   font: 700 10px/1 sans-serif;
 }
 
+.level-progress-grid,
+.admin-level-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.level-progress-card,
+.admin-level-stats article {
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f8faf7;
+}
+
+.level-progress-card span,
+.admin-level-stats span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.level-progress-card strong,
+.admin-level-stats strong {
+  display: block;
+  margin-top: 7px;
+  color: var(--green);
+  font: 600 24px/1 "Yu Mincho", serif;
+}
+
+.level-progress-card small,
+.admin-level-stats small {
+  margin-left: 3px;
+  color: var(--muted);
+  font: 700 10px/1 sans-serif;
+}
+
+.level-progress-card p,
+.admin-level-stats p {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .progress-section,
 .admin-section {
   margin-top: 42px;
@@ -1220,6 +1265,10 @@ legend,
   margin-left: 3px;
   color: var(--muted);
   font: 700 11px/1 sans-serif;
+}
+
+.admin-level-stats {
+  margin-top: 12px;
 }
 
 .attempt-table {

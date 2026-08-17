@@ -2,56 +2,18 @@ import { inArray } from "drizzle-orm";
 import { getDb } from "@/db";
 import { questionAnswerOverrides } from "@/db/schema";
 import type { Question } from "@/lib/questions";
+import {
+  normalizeReading,
+  parseAcceptedReadings,
+} from "./reading-core.mjs";
 
-export function normalizeReading(value: string) {
-  return value
-    .trim()
-    .replace(/\s+/g, "")
-    .replace(/[ァ-ヶ]/g, (char) =>
-      String.fromCharCode(char.charCodeAt(0) - 0x60),
-    );
-}
+export { normalizeReading, parseAcceptedReadings, validateAcceptedReadings } from "./reading-core.mjs";
 
 export function defaultAcceptedReadings(question: Question) {
   return uniqueReadings([
     question.reading,
     ...(question.acceptedReadings ?? []),
   ]);
-}
-
-export function parseAcceptedReadings(
-  value: string,
-  fallback: string[] = [],
-) {
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    if (!Array.isArray(parsed)) return fallback;
-    const readings = uniqueReadings(
-      parsed.filter((item): item is string => typeof item === "string"),
-    );
-    return readings.length ? readings : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-export function validateAcceptedReadings(value: unknown) {
-  if (!Array.isArray(value) || value.length < 1 || value.length > 20) {
-    return null;
-  }
-  const readings = uniqueReadings(
-    value.filter((item): item is string => typeof item === "string"),
-  );
-  if (
-    readings.length < 1 ||
-    readings.some(
-      (reading) =>
-        reading.length > 40 || !/^[ぁ-ゖー]+$/.test(reading),
-    )
-  ) {
-    return null;
-  }
-  return readings;
 }
 
 export async function loadAnswerOverrides(questionIds: string[]) {

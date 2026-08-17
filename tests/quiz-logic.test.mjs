@@ -44,11 +44,12 @@ test("複数の正解読みを採点に使う", async () => {
 
 test("認証と成績保存にセッション境界がある", async () => {
   const auth = await source("lib/student-auth.ts");
+  const passwordCore = await source("lib/password-core.mjs");
   const login = await source("app/api/auth/login/route.ts");
   const register = await source("app/api/auth/register/route.ts");
   const progress = await source("app/api/progress/route.ts");
   const attempts = await source("app/api/attempts/route.ts");
-  assert.match(auth, /PASSWORD_ITERATIONS\s*=\s*100_000/);
+  assert.match(passwordCore, /PASSWORD_ITERATIONS\s*=\s*100_000/);
   assert.match(auth, /validStudentName/);
   assert.match(auth, /validPassword/);
   assert.match(login, /passwordMatches/);

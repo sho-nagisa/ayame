@@ -1,4 +1,5 @@
 import { getDb } from "@/db";
+import { ensureDatabase } from "@/db/ensure";
 import { attemptAnswers, attempts } from "@/db/schema";
 import { LEVELS, QUESTIONS, type QuizLevel, type QuizMode } from "@/lib/questions";
 import { getSessionStudent } from "@/lib/student-auth";
@@ -27,6 +28,9 @@ export async function POST(request: Request) {
     return Response.json({ error: "ログインが必要です。" }, { status: 401 });
   }
 
+  // Keep this route safe when it is the first database request after a deploy.
+  await ensureDatabase();
+
   const body = (await request.json().catch(() => null)) as AttemptBody | null;
   const level = body?.level;
   const mode = body?.mode;
@@ -53,50 +57,67 @@ export async function POST(request: Request) {
     .filter(Boolean);
   const overrides = await loadAnswerOverrides(submittedQuestionIds);
   const seenIds = new Set<string>();
-  const checkedAnswers = submitted.map((answer, questionOrder) => {
-    const questionId = typeof answer.questionId === "string" ? answer.questionId : "";
-    const response = typeof answer.response === "string" ? answer.response.slice(0, 100) : "";
-    const question = questionMap.get(questionId);
-    if (!question || question.level !== level || seenIds.has(questionId)) {
-      throw new Error("invalid_question");
-    }
-    seenIds.add(questionId);
-    const acceptedReadings = acceptedReadingsFor(question, overrides);
-    return {
-      id: crypto.randomUUID(),
-      questionId,
-      questionOrder,
-      level: level as QuizLevel,
-      word: question.word,
-      sentence: question.sentence,
-      reading: acceptedReadings[0],
-      acceptedReadingsJson: JSON.stringify(acceptedReadings),
-      kind: question.kind,
-      response,
-      correct: acceptedReadings.some(
-        (reading) => normalizeReading(response) === normalizeReading(reading),
-      ),
-    };
-  });
+  let checkedAnswers: Array<{
+    id: string;
+    questionId: string;
+    questionOrder: number;
+    level: QuizLevel;
+    word: string;
+    sentence: string;
+    reading: string;
+    acceptedReadingsJson: string;
+    kind: string;
+    response: string;
+    correct: boolean;
+  }>;
+  try {
+    checkedAnswers = submitted.map((answer, questionOrder) => {
+      const questionId = typeof answer.questionId === "string" ? answer.questionId : "";
+      const response = typeof answer.response === "string" ? answer.response.slice(0, 100) : "";
+      const question = questionMap.get(questionId);
+      if (!question || question.level !== level || seenIds.has(questionId)) {
+        throw new Error("invalid_question");
+      }
+      seenIds.add(questionId);
+      const acceptedReadings = acceptedReadingsFor(question, overrides);
+      return {
+        id: crypto.randomUUID(),
+        questionId,
+        questionOrder,
+        level: level as QuizLevel,
+        word: question.word,
+        sentence: question.sentence,
+        reading: acceptedReadings[0],
+        acceptedReadingsJson: JSON.stringify(acceptedReadings),
+        kind: question.kind,
+        response,
+        correct: acceptedReadings.some(
+          (reading) => normalizeReading(response) === normalizeReading(reading),
+        ),
+      };
+    });
+  } catch {
+    return Response.json({ error: "問題データが正しくありません。ページを再読み込みしてください。" }, { status: 400 });
+  }
 
   const attemptId = crypto.randomUUID();
   const score = checkedAnswers.filter((answer) => answer.correct).length;
   const db = getDb();
-  await db.insert(attempts).values({
-    id: attemptId,
-    studentId: student.id,
-    level,
-    mode: mode as QuizMode,
-    score,
-    total: checkedAnswers.length,
-    leaveCount,
-    createdAt: Date.now(),
-  });
-
   try {
+    await db.insert(attempts).values({
+      id: attemptId,
+      studentId: student.id,
+      level,
+      mode: mode as QuizMode,
+      score,
+      total: checkedAnswers.length,
+      leaveCount,
+      createdAt: Date.now(),
+    });
+
     // D1 limits the number of bound values in one statement. Keep each
     // multi-row insert comfortably below that limit as more fields are added.
-    const answerChunkSize = 8;
+    const answerChunkSize = 4;
     for (let index = 0; index < checkedAnswers.length; index += answerChunkSize) {
       await db.insert(attemptAnswers).values(
         checkedAnswers
@@ -105,8 +126,14 @@ export async function POST(request: Request) {
       );
     }
   } catch (error) {
-    await db.delete(attempts).where(eq(attempts.id, attemptId));
-    throw error;
+    console.error("attempt_save_failed", {
+      level,
+      mode,
+      answerCount: checkedAnswers.length,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    await db.delete(attempts).where(eq(attempts.id, attemptId)).catch(() => undefined);
+    return Response.json({ error: "成績を保存できませんでした。時間をおいてもう一度お試しください。" }, { status: 500 });
   }
 
   return Response.json(

@@ -6,12 +6,13 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-test("問題バンクは5級・6級を分けて収録する", async () => {
+test("問題バンクは4級・5級・6級を分けて収録する", async () => {
   const text = await source("lib/questions.ts");
-  assert.match(text, /QuizLevel = "5" \| "6"/);
+  assert.match(text, /QuizLevel = "4" \| "5" \| "6"/);
+  assert.equal((text.match(/\{ id: "4-[^"]+"/g) ?? []).length, 2490);
   assert.equal((text.match(/\{ id: "5-[^"]+"/g) ?? []).length, 1904);
   assert.equal((text.match(/\{ id: "6-[^"]+"/g) ?? []).length, 1564);
-  assert.equal(new Set([...text.matchAll(/\{ id: "([^"]+)"/g)].map((m) => m[1])).size, 3468);
+  assert.equal(new Set([...text.matchAll(/\{ id: "([^"]+)"/g)].map((m) => m[1])).size, 5958);
 });
 
 test("3モードが画面からAPIまで同じ値で連携する", async () => {

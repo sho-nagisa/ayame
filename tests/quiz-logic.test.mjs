@@ -9,9 +9,9 @@ async function source(path) {
 test("問題バンクは5級・6級を分けて収録する", async () => {
   const text = await source("lib/questions.ts");
   assert.match(text, /QuizLevel = "5" \| "6"/);
-  assert.equal((text.match(/\{ id: "5-[^"]+"/g) ?? []).length, 1885);
+  assert.equal((text.match(/\{ id: "5-[^"]+"/g) ?? []).length, 1904);
   assert.equal((text.match(/\{ id: "6-[^"]+"/g) ?? []).length, 1564);
-  assert.equal(new Set([...text.matchAll(/\{ id: "([^"]+)"/g)].map((m) => m[1])).size, 3449);
+  assert.equal(new Set([...text.matchAll(/\{ id: "([^"]+)"/g)].map((m) => m[1])).size, 3468);
 });
 
 test("3モードが画面からAPIまで同じ値で連携する", async () => {
